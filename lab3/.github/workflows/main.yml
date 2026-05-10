@@ -1,0 +1,49 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Check directories
+        run: |
+          echo "Running tests..."
+          if [ ! -d "dags" ]; then echo "dags directory not found!"; exit 1; fi
+          if [ ! -d "spark" ]; then echo "spark directory not found!"; exit 1; fi
+          echo "Tests passed successfully!"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: "!startsWith(github.ref, 'refs/heads/feature/')"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          echo "Building docker image..."
+          docker build -t my_airflow_image .
+          echo "Build completed!"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: "github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy application
+        run: |
+          echo "Deploying application..."
+          docker-compose up -d
+          echo "Application successfully deployed!"

@@ -1,0 +1,6 @@
+devops_hw/
+__pycache__/
+logs/
+plugins/
+*.log
+config/
